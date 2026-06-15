@@ -50,16 +50,23 @@ export function compareCoinFingerprints(
 export function findBestMatch(
   newFront: Fingerprint,
   newBack: Fingerprint,
-  coins: Coin[],
+  coins: Coin[] = [],
 ): CoinMatchResult {
-  let bestMatch: CoinMatchResult = {
-    score: 0,
-    classification: 'new coin',
-    phashScore: 0,
-    colorScore: 0,
-    embeddingScore: 0,
-    coin: null,
-  };
+  if (!coins || coins.length === 0) {
+    log('MATCHER: No coins found, skipping comparison');
+    return {
+      score: 1,
+      classification: 'new coin',
+      phashScore: 1,
+      colorScore: 1,
+      embeddingScore: 1,
+      coin: null,
+    };
+  }
+
+  log(`MATCHER: Proceeding with comparison (${coins.length} coins)`);
+
+  let bestMatch: CoinMatchResult | null = null;
 
   for (const coin of coins) {
     const storedFront: Fingerprint = {
@@ -74,7 +81,7 @@ export function findBestMatch(
     };
 
     const result = compareCoinFingerprints(newFront, newBack, storedFront, storedBack);
-    if (result.score > bestMatch.score) {
+    if (!bestMatch || result.score > bestMatch.score) {
       bestMatch = {
         ...result,
         coin,
@@ -82,6 +89,15 @@ export function findBestMatch(
     }
   }
 
-  log(`MATCH RESULT: ${bestMatch.classification.toUpperCase()} ${bestMatch.score.toFixed(3)}`);
-  return bestMatch;
+  const finalMatch = bestMatch ?? {
+    score: 1,
+    classification: 'new coin',
+    phashScore: 1,
+    colorScore: 1,
+    embeddingScore: 1,
+    coin: null,
+  };
+
+  log(`MATCH RESULT: ${finalMatch.classification.toUpperCase()} ${finalMatch.score.toFixed(3)}`);
+  return finalMatch;
 }

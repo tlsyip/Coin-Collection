@@ -1,3 +1,5 @@
+import { log } from '../logging';
+
 export type Fingerprint = {
   pHash: string;
   colorHistogram: number[];
@@ -168,9 +170,17 @@ export function classifyMatch(score: number) {
 }
 
 export async function generateFingerprint(image: HTMLImageElement): Promise<Fingerprint> {
-  return {
-    pHash: generateDHash(image),
-    colorHistogram: generateColorHistogram(image),
-    embedding: generateStructuredFeatureVector(image),
-  };
+  log('FINGERPRINT START');
+  try {
+    const fingerprint = {
+      pHash: generateDHash(image),
+      colorHistogram: generateColorHistogram(image),
+      embedding: generateStructuredFeatureVector(image),
+    };
+    log('FINGERPRINT SUCCESS');
+    return fingerprint;
+  } catch (error) {
+    log(`IMAGE PROCESSING ERROR: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
+  }
 }

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { addCoin, loadCoins } from '../storage/localStore';
+import { addCoin, loadCoins, saveCoins } from '../storage/localStore';
 import { processCoinImage, loadImageElement } from '../vision/imageProcessor';
 import { generateFingerprint } from '../vision/fingerprint';
 import { findBestMatch } from '../vision/matcher';
+import { safeUUID } from '../utils/uuid';
 import DebugPanel from './DebugPanel';
 import { log } from '../logging';
 import type { Coin } from '../models/coin';
@@ -31,6 +32,7 @@ function App() {
   const [score, setScore] = useState<number | null>(null);
   const [bestMatch, setBestMatch] = useState<Coin | null>(null);
   const [pendingCoin, setPendingCoin] = useState<PendingCoin | null>(null);
+  const [selectedCoin, setSelectedCoin] = useState<Coin | null>(null);
   const [status, setStatus] = useState<string>('');
   const [showCollection, setShowCollection] = useState(false);
 
@@ -38,6 +40,12 @@ function App() {
     const loaded = loadCoins();
     setCoins(loaded);
   }, []);
+
+  useEffect(() => {
+    if (selectedCoin && !coins.some((coin) => coin.id === selectedCoin.id)) {
+      setSelectedCoin(null);
+    }
+  }, [coins, selectedCoin]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -64,7 +72,22 @@ function App() {
         generateFingerprint(backImage),
       ]);
 
-      const match = findBestMatch(frontFingerprint, backFingerprint, coins);
+      let match = null;
+      if (coins.length === 0) {
+        log('MATCHER: No coins in collection → NEW COIN');
+        match = {
+          score: 1,
+          classification: 'new coin' as const,
+          phashScore: 1,
+          colorScore: 1,
+          embeddingScore: 1,
+          coin: null,
+        };
+      } else {
+        log(`MATCHER: Proceeding with comparison (${coins.length} coins)`);
+        match = findBestMatch(frontFingerprint, backFingerprint, coins);
+      }
+
       setResult(match.classification);
       setScore(match.score);
       setBestMatch(match.coin);
@@ -78,7 +101,7 @@ function App() {
 
       if (match.classification === 'new coin') {
         const newCoin: Coin = {
-          id: crypto.randomUUID(),
+          id: safeUUID(),
           nickname: '',
           frontImagePath: coinPayload.frontImagePath,
           backImagePath: coinPayload.backImagePath,
@@ -98,7 +121,7 @@ function App() {
         setPendingCoin(coinPayload);
       }
     } catch (error) {
-      log('ERROR: Unable to process coin images');
+      log(`IMAGE PROCESSING ERROR: ${error instanceof Error ? error.message : String(error)}`);
       setStatus('An error occurred while processing the coin.');
     } finally {
       setStatus('');
@@ -111,7 +134,7 @@ function App() {
     }
 
     const newCoin: Coin = {
-      id: crypto.randomUUID(),
+      id: safeUUID(),
       nickname: '',
       frontImagePath: pendingCoin.frontImagePath,
       backImagePath: pendingCoin.backImagePath,
@@ -131,6 +154,26 @@ function App() {
     setResult('new coin');
     setBestMatch(null);
     setScore(null);
+  };
+
+  const handleSelectCoin = (coin: Coin) => {
+    setSelectedCoin(coin);
+    setShowCollection(true);
+  };
+
+  const handleCloseSelectedCoin = () => {
+    setSelectedCoin(null);
+  };
+
+  const handleDeleteSelectedCoin = () => {
+    if (!selectedCoin) {
+      return;
+    }
+
+    const remainingCoins = coins.filter((coin) => coin.id !== selectedCoin.id);
+    saveCoins(remainingCoins);
+    setCoins(remainingCoins);
+    setSelectedCoin(null);
   };
 
   return (
@@ -250,7 +293,7 @@ function App() {
                 onClick={() => setShowCollection(false)}
                 style={{
                   position: 'absolute',
-                  top: '12px',
+                  bottom: '12px',
                   right: '12px',
                   padding: '8px 12px',
                   backgroundColor: '#ef4444',
@@ -264,7 +307,63 @@ function App() {
                 Close
               </button>
               <h2 style={{ marginTop: 0 }}>My Collection ({coins.length} coins)</h2>
-              {coins.length === 0 ? (
+              {selectedCoin ? (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '16px',
+                    minHeight: '60vh',
+                  }}
+                >
+                  <img
+                    src={selectedCoin.frontImagePath}
+                    alt='Selected coin'
+                    style={{
+                      width: '100%',
+                      maxWidth: '320px',
+                      borderRadius: '16px',
+                      objectFit: 'contain',
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <button
+                      type="button"
+                      onClick={handleDeleteSelectedCoin}
+                      style={{
+                        padding: '14px 18px',
+                        backgroundColor: '#ef4444',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        minWidth: '120px',
+                        fontSize: '16px',
+                      }}
+                    >
+                      Delete Coin
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCloseSelectedCoin}
+                      style={{
+                        padding: '14px 18px',
+                        backgroundColor: '#3b82f6',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        minWidth: '120px',
+                        fontSize: '16px',
+                      }}
+                    >
+                      Back
+                    </button>
+                  </div>
+                </div>
+              ) : coins.length === 0 ? (
                 <p>No coins in your collection yet.</p>
               ) : (
                 <div
@@ -279,7 +378,8 @@ function App() {
                     <div key={coin.id} style={{ textAlign: 'center' }}>
                       <img
                         src={coin.frontImagePath}
-                        alt={coin.nickname || coin.id}
+                        alt='Coin image'
+                        onClick={() => handleSelectCoin(coin)}
                         style={{
                           width: '100%',
                           height: '120px',
@@ -288,9 +388,6 @@ function App() {
                           cursor: 'pointer',
                         }}
                       />
-                      <p style={{ fontSize: '12px', marginTop: '8px' }}>
-                        {coin.nickname || 'Unnamed'}
-                      </p>
                     </div>
                   ))}
                 </div>
