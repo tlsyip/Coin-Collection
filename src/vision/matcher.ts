@@ -1,5 +1,6 @@
 import type { Coin } from '../models/coin';
 import type { Fingerprint } from './fingerprint';
+import { log } from '../logging';
 import {
   compareEmbedding,
   compareHistogram,
@@ -81,5 +82,6 @@ export function findBestMatch(
     }
   }
 
+  log(`MATCH RESULT: ${bestMatch.classification.toUpperCase()} ${bestMatch.score.toFixed(3)}`);
   return bestMatch;
 }
