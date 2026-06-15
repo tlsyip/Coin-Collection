@@ -166,7 +166,36 @@ function App() {
               Status: <strong>{result}</strong>
             </p>
             <p>Score: {score?.toFixed(3)}</p>
-            {bestMatch && <p>Best match: {bestMatch.nickname || bestMatch.id}</p>}
+            {bestMatch && pendingCoin && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px' }}>
+                <div>
+                  <p>Uploaded coin</p>
+                  <img
+                    src={pendingCoin.frontImagePath}
+                    alt="Uploaded coin"
+                    style={{ width: '100%', maxWidth: '240px', borderRadius: '16px' }}
+                  />
+                </div>
+                <div>
+                  <p>Best match front coin</p>
+                  <img
+                    src={bestMatch.frontImagePath}
+                    alt={bestMatch.nickname || 'Best match front coin'}
+                    style={{ width: '100%', maxWidth: '240px', borderRadius: '16px' }}
+                  />
+                </div>
+              </div>
+            )}
+            {bestMatch && !pendingCoin && (
+              <div>
+                <p>Best match:</p>
+                <img
+                  src={bestMatch.frontImagePath}
+                  alt={bestMatch.nickname || 'Best match front coin'}
+                  style={{ maxWidth: '240px', maxHeight: '240px', borderRadius: '16px', marginTop: '8px' }}
+                />
+              </div>
+            )}
           </section>
         )}
 
