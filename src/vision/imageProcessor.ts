@@ -4,6 +4,21 @@ export type ProcessedImage = {
   dataUrl: string;
 };
 
+export async function loadImageElement(dataUrl: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = dataUrl;
+  });
+}
+
+export async function processCoinImage(dataUrl: string): Promise<ProcessedImage> {
+  const image = await loadImageElement(dataUrl);
+  const cropped = await detectAndCropCoin(image);
+  return normalizeImage(cropped);
+}
+
 async function createImageCanvas(image: HTMLImageElement, maxDimension = 1024) {
   const aspect = image.naturalWidth / image.naturalHeight;
   const width = image.naturalWidth > image.naturalHeight ? maxDimension : Math.round(maxDimension * aspect);
