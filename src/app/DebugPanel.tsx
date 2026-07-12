@@ -13,18 +13,19 @@ function DebugPanel() {
   }, []);
 
   return (
-    <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1200 }}>
+    <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1200, textAlign: 'right' }}>
       <button
         type="button"
         onClick={() => setVisible((current) => !current)}
         style={{
-          width: '100%',
+          width: 'auto',
           padding: '12px 16px',
           backgroundColor: '#0f172a',
           color: '#f8fafc',
           border: 'none',
           fontSize: '16px',
-          textAlign: 'left',
+          display: 'inline-block',
+          borderRadius: '5px',
           cursor: 'pointer',
         }}
       >
