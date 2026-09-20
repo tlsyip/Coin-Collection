@@ -9,3 +9,16 @@ A local-first web application for coin collectors to detect duplicate coin types
 - `src/storage` — local persistence and collection management
 - `src/models` — shared data models and types
 - `tests` — unit tests and validation logic
+
+## Development
+
+```bash
+npm install
+npm run dev
+```
+
+The production build is configured for the GitHub Pages repository URL:
+`https://tlsyip.github.io/Coin-Collection/`.
+
+GitHub Pages deployment is handled by `.github/workflows/deploy.yml`. In the
+repository settings, set Pages > Build and deployment > Source to GitHub Actions.

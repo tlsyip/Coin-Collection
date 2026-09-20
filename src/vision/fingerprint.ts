@@ -159,7 +159,7 @@ export function scoreMatch(phashScore: number, colorScore: number, embeddingScor
   return phashScore * 0.2 + colorScore * 0.3 + embeddingScore * 0.5;
 }
 
-export function classifyMatch(score: number) {
+export function classifyMatch(score: number): 'already in collection' | 'possible match' | 'new coin' {
   if (score >= 0.95) {
     return 'already in collection';
   }
